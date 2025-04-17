@@ -1,8 +1,8 @@
 import streamlit as st
-import random
 import time
 import plotly.graph_objects as go
 import pandas as pd
+import pydeck as pdk
 from datetime import datetime
 
 # Page config
@@ -19,25 +19,29 @@ if "history" not in st.session_state:
         "temperature": []
     }
 
-# Simulate telemetry data
+# Simulate telemetry data with constant values for testing
 def get_telemetry_data():
     return {
-        "Battery Voltage (V)": round(random.uniform(0, 12), 2),
-        "Roll (°)": round(random.uniform(-180, 180), 2),
-        "Pitch (°)": round(random.uniform(-90, 90), 2),
-        "Yaw (°)": round(random.uniform(-180, 180), 2),
-        "Temperature (°C)": round(random.uniform(-10, 50), 2),
-        "Altitude (m)": round(random.uniform(0, 1000), 2),
-        "Latitude": round(random.uniform(-90, 90), 6),
-        "Longitude": round(random.uniform(-180, 180), 6),
-        "Connection Health": random.choice(["Excellent", "Poor", "No Signal"]),
+        "Battery Voltage (V)": 11.5,
+        "Roll (°)": 15.0,
+        "Pitch (°)": 5.0,
+        "Yaw (°)": 0.0,
+        "Temperature (°C)": 25.0,
+        "Altitude (m)": 500.0,
+        "Latitude": 11.0168,
+        "Longitude": 76.9558,
+        "Connection Health": "Excellent",
         "Time": datetime.now().strftime("%H:%M:%S")
     }
 
 placeholder = st.empty()
 
+# Coimbatore Coordinates for reference
+coimbatore_lat = 11.0168
+coimbatore_lon = 76.9558
+
 # Live update loop (demo: 1000 iterations)
-for _ in range(1000):
+for i in range(1000):
     data = get_telemetry_data()
 
     # Store for graphs
@@ -58,21 +62,23 @@ for _ in range(1000):
                 title={'text': "Battery Level"},
                 gauge={'axis': {'range': [0, 12]}}
             ))
-            st.plotly_chart(fig, use_container_width=True)
+            st.plotly_chart(fig, use_container_width=True, key=f"battery_chart_{i}")
 
         # Altitude graph
         with col2:
             st.metric("Altitude", f"{data['Altitude (m)']} m")
-            st.line_chart({
-                "Altitude (m)": st.session_state.history["altitude"]
-            })
+            st.line_chart(
+                {"Altitude (m)": st.session_state.history["altitude"]},
+                use_container_width=True
+            )
 
         # Temperature graph
         with col3:
             st.metric("Temperature", f"{data['Temperature (°C)']} °C")
-            st.line_chart({
-                "Temperature (°C)": st.session_state.history["temperature"]
-            })
+            st.line_chart(
+                {"Temperature (°C)": st.session_state.history["temperature"]},
+                use_container_width=True
+            )
 
         st.subheader("Other Telemetry Data")
         col4, col5, col6 = st.columns(3)
@@ -88,7 +94,30 @@ for _ in range(1000):
             st.caption(f"Last updated: {data['Time']}")
 
         st.subheader("Drone Position Map")
-        gps_df = pd.DataFrame({'lat': [data['Latitude']], 'lon': [data['Longitude']]})
-        st.map(gps_df)
+
+        # Pydeck map displaying Coimbatore and the drone's location
+        deck = pdk.Deck(
+            initial_view_state=pdk.ViewState(
+                latitude=coimbatore_lat,
+                longitude=coimbatore_lon,
+                zoom=12,
+                pitch=0
+            ),
+            layers=[
+                pdk.Layer(
+                    "ScatterplotLayer",
+                    data=[{
+                        'lat': data['Latitude'],
+                        'lon': data['Longitude'],
+                        'size': 10
+                    }],
+                    get_position=['lon', 'lat'],
+                    get_color=[255, 0, 0],
+                    get_radius=50,
+                )
+            ]
+        )
+
+        st.pydeck_chart(deck, use_container_width=True)
 
     time.sleep(1)
