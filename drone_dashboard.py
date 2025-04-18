@@ -9,8 +9,8 @@ st.set_page_config(page_title="Drone Journey: PSG Tech to PSG iTech", layout="wi
 st.title("🚁 Drone Simulation: PSG Tech to PSG iTech")
 
 # Coordinates
-start_lat, start_lon = 11.0183, 76.9354  # PSG Tech
-end_lat, end_lon = 11.0796, 77.0982      # PSG iTech
+start_lat, start_lon = 11.024030, 77.002878  # PSG Tech
+end_lat, end_lon = 11.065841, 77.094024      # PSG iTech
 
 steps = 50  # Number of movement steps (simulate 50 points)
 
